@@ -643,3 +643,5 @@ footer {
     transition: none !important;
   }
 }
+
+.actions .primary:hover:not(:disabled){background:#a8492b}
