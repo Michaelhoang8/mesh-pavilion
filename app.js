@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id),
 let result = null,
   request = 0,
   ready = false,
-  title = "Cube / a reversed face",
+  title = "Reversed cube",
   ignored = [],
   history = [],
   yaw = -0.65,
@@ -26,7 +26,7 @@ function enable(value) {
 function run(mesh) {
   enable(false);
   $("error").textContent = "";
-  $("status").textContent = "Inspecting indexed connections…";
+  $("status").textContent = "Analyzing…";
   worker.postMessage({ id: ++request, model: mesh });
 }
 worker.onmessage = ({ data }) => {
@@ -43,7 +43,7 @@ worker.onmessage = ({ data }) => {
   render();
   $("status").textContent = ignored.length
     ? "OBJ directives ignored: " + ignored.join(", ") + "."
-    : "Coordinates preserved. Analysis complete.";
+    : "";
 };
 worker.onerror = () => {
   $("error").textContent = "The analysis worker stopped. Reload to restart it.";
@@ -207,8 +207,23 @@ function transform(v) {
   return [x, c * v[1] - d * z, d * v[1] + c * z];
 }
 function draw() {
-  ctx.fillStyle = "#f5f2eb";
-  ctx.fillRect(0, 0, 1000, 700);
+  const rect = canvas.getBoundingClientRect(),
+    width = rect.width,
+    height = rect.height;
+  if (!width || !height) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#eeefec";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#d3d7d1";
+  for (let y = 25; y < height; y += 25)
+    for (let x = 25; x < width; x += 25) {
+      ctx.beginPath();
+      ctx.arc(x, y, 0.65, 0, Math.PI * 2);
+      ctx.fill();
+    }
   if (!result) return;
   const vertices = result.mesh.vertices,
     used = [...new Set(result.mesh.faces.flat())],
@@ -216,19 +231,34 @@ function draw() {
     maxs = [0, 1, 2].map((i) => Math.max(...used.map((v) => vertices[v][i]))),
     center = mins.map((v, i) => (v + maxs[i]) / 2),
     extent = Math.max(...maxs.map((v, i) => v - mins[i]), 1e-9),
-    scale = (330 / extent) * zoom;
+    scale = (Math.min(width * 0.53, height * 0.55) / extent) * zoom;
   const points = vertices
     .map((v) => transform(v.map((x, i) => x - center[i])))
-    .map((v) => ({ x: 500 + v[0] * scale, y: 350 - v[1] * scale, z: v[2] }));
-  ctx.strokeStyle = "#dce1d7";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(75, 590);
-  ctx.lineTo(925, 590);
-  ctx.stroke();
-  ctx.font = "12px Arial";
-  ctx.fillStyle = "#949d96";
-  ctx.fillText("INDEXED TRIANGLE STUDY", 75, 615);
+    .map((v) => ({
+      x: width / 2 + v[0] * scale,
+      y: height / 2 - v[1] * scale,
+      z: v[2],
+    }));
+  // Small orientation axes remain independent of the object scale.
+  const origin = [width - 52, 90];
+  for (const [axis, label, color] of [
+    [[1, 0, 0], "X", "#bf6a49"],
+    [[0, 1, 0], "Y", "#618065"],
+    [[0, 0, 1], "Z", "#6689aa"],
+  ]) {
+    const v = transform(axis),
+      x = origin[0] + v[0] * 24,
+      y = origin[1] - v[1] * 24;
+    ctx.beginPath();
+    ctx.moveTo(...origin);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = "9px Arial";
+    ctx.fillText(label, x + 3, y - 3);
+  }
   const order = result.mesh.faces
     .map((f, i) => ({ f, i, z: f.reduce((s, v) => s + points[v].z, 0) / 3 }))
     .sort((a, b) => a.z - b.z);
@@ -244,15 +274,15 @@ function draw() {
     ctx.closePath();
     ctx.fillStyle =
       "rgb(" +
-      Math.round(75 + light * 75) +
+      Math.round(145 + light * 86) +
       "," +
-      Math.round(100 + light * 80) +
+      Math.round(77 + light * 81) +
       "," +
-      Math.round(109 + light * 85) +
+      Math.round(49 + light * 68) +
       ")";
     ctx.fill();
     if ($("wire").checked) {
-      ctx.strokeStyle = "#49616d99";
+      ctx.strokeStyle = "#824d3699";
       ctx.lineWidth = 0.9;
       ctx.stroke();
     }
@@ -294,6 +324,8 @@ function draw() {
   );
 }
 $("collection").onchange = () => {
+  for (const b of document.querySelectorAll(".model-button"))
+    b.setAttribute("aria-pressed", b.dataset.model === $("collection").value);
   history = [];
   $("undo").disabled = true;
   title = $("collection").selectedOptions[0].textContent;
@@ -446,6 +478,8 @@ $("file").onchange = async () => {
     }
     history = [];
     $("undo").disabled = true;
+    for (const b of document.querySelectorAll(".model-button"))
+      b.setAttribute("aria-pressed", "false");
     title = file.name.slice(0, 100);
     ignored = notes;
     run(m);
@@ -453,4 +487,68 @@ $("file").onchange = async () => {
     $("error").textContent = "Could not open mesh: " + e.message;
   }
 };
+const icons = {
+  torus:
+    '<ellipse cx="16" cy="16" rx="13" ry="9"/><ellipse cx="16" cy="16" rx="6" ry="3"/>',
+  mobius: '<path d="M3 16C3 2 26 28 29 16S6 4 3 16Z"/>',
+  pinch: '<path d="M3 4L16 16L3 28ZM29 4L16 16L29 28Z"/>',
+  edge: '<path d="M16 4V28L3 19ZM16 4L29 15L16 28M16 4L24 8L16 28"/>',
+  cube: '<path d="M16 2L29 9V23L16 30L3 23V9ZM3 9L16 16L29 9M16 16V30M3 9L16 2L16 16"/>',
+};
+for (const option of $("collection").options) {
+  const b = document.createElement("button");
+  b.className = "model-button";
+  b.dataset.model = option.value;
+  b.setAttribute("aria-pressed", option.value === "flipped");
+  b.innerHTML =
+    '<svg viewBox="0 0 32 32" aria-hidden="true">' +
+    (icons[option.value] || icons.cube) +
+    "</svg>";
+  b.append(document.createTextNode(option.textContent));
+  b.onclick = () => {
+    $("collection").value = option.value;
+    $("collection").onchange();
+  };
+  $("model-list").append(b);
+}
+function showTopology(open) {
+  $("topology-panel").hidden = !open;
+  $("topology-toggle").setAttribute("aria-expanded", open);
+}
+$("topology-toggle").onclick = () => showTopology($("topology-panel").hidden);
+$("topology-close").onclick = () => {
+  showTopology(false);
+  $("topology-toggle").focus();
+};
+const tabs = [...document.querySelectorAll("[data-pane]")];
+function selectPane(button) {
+  for (const t of tabs) {
+    const active = t === button;
+    t.setAttribute("aria-selected", active);
+    t.tabIndex = active ? 0 : -1;
+    $("pane-" + t.dataset.pane).hidden = !active;
+  }
+}
+for (const [i, b] of tabs.entries()) {
+  b.tabIndex = i === 0 ? 0 : -1;
+  b.onclick = () => selectPane(b);
+  b.onkeydown = (e) => {
+    let next;
+    if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (i + tabs.length - 1) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    selectPane(tabs[next]);
+    tabs[next].focus();
+  };
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("topology-panel").hidden) {
+    showTopology(false);
+    $("topology-toggle").focus();
+  }
+});
+new ResizeObserver(draw).observe(canvas);
 run(example("flipped"));

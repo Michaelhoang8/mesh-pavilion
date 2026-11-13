@@ -4,6 +4,12 @@ A triangle-mesh inspection gallery with indexed topology diagnostics, boundary l
 
 ![Mesh winding inspection](docs/workbench.png)
 
+## Interface
+
+The desktop editor opens directly to the model viewport. Choose examples in the left model list, orbit the mesh in the center, and inspect or repair it from the right properties panel. **Topology** opens a lower panel with keyboard-navigable Surfaces, Edges, and Diagnostics tabs. Export formats are grouped in the top toolbar. On narrow screens, the model list becomes a dropdown and properties follow the viewport.
+
+The canvas renders at its current size and device pixel ratio (capped at 2). A coordinate-axis indicator rotates with the camera; the dotted background is a screen-space guide, not a world-space measurement grid.
+
 ## Run
 
 ```sh
@@ -82,3 +88,5 @@ Browser checks covered keyboard orbit/zoom, edge selection, pagination across th
 References: [CGAL polygon mesh processing: orientation and manifold repair](https://doc.cgal.org/5.6.3/Polygon_mesh_processing/index.html), [Polthier: Introduction to Polyhedral Meshes](https://page.mi.fu-berlin.de/polthier/articles/habil/polthier-habil2002.pdf). Mesh Pavilion implements its own bounded indexed-triangle algorithms and does not use CGAL.
 
 `core.js` owns parsing and topology; `worker.js` isolates analysis; `app.js` handles files, camera, inspection, and export; `run.py` serves only browser assets. There are no data uploads or telemetry calls.
+
+The editor redesign was browser-checked at desktop and 390-pixel widths: model selection, keyboard rotation, topology tab keys, edge highlighting, repair, undo, and panel dismissal. All nine geometry tests remain passing.

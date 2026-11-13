@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="A quiet gallery for inspecting triangle-mesh topology, boundaries, orientation, and winding repair."
+      content="Triangle mesh inspection and winding repair."
     />
     <title>Mesh Pavilion</title>
     <link rel="stylesheet" href="style.css" />
@@ -13,12 +13,20 @@
   </head>
   <body>
     <header>
-      <a href="/" class="brand">M<span class="brand-line">/</span>P</a
-      ><span>MESH PAVILION</span>
+      <a class="brand" href="/">Mesh Pavilion</a
+      ><span class="document-type">OBJ / JSON</span>
       <nav>
-        <button id="open">Open OBJ / JSON</button
-        ><button id="save" disabled>Export OBJ ↗</button
-        ><input
+        <button id="open">Open file</button
+        ><button id="save" disabled>Export OBJ</button>
+        <details class="export-menu">
+          <summary aria-label="More export formats">···</summary>
+          <div>
+            <button id="json" disabled>Mesh JSON</button
+            ><button id="evidence" disabled>Analysis JSON</button
+            ><button id="png" disabled>Preview PNG</button>
+          </div>
+        </details>
+        <input
           id="file"
           type="file"
           accept=".obj,.json,text/plain,application/json"
@@ -26,109 +34,145 @@
         />
       </nav>
     </header>
-    <main>
-      <section class="heading">
-        <div>
-          <p class="eyebrow">A STUDY OF SURFACES</p>
-          <h1>Look beneath<br />the surface.</h1>
+    <main class="editor">
+      <nav class="objects" aria-label="Example meshes">
+        <h2>Models</h2>
+        <div id="model-list"></div>
+        <label class="mobile-collection"
+          >Model<select id="collection">
+            <option value="flipped">Reversed cube</option>
+            <option value="cube">Cube</option>
+            <option value="open">Open cube</option>
+            <option value="torus">Torus</option>
+            <option value="mobius">Möbius band</option>
+            <option value="pinch">Pinched vertex</option>
+            <option value="edge">Overfull edge</option>
+          </select></label
+        >
+        <div class="file-note">
+          2,000 vertices max.<br />Triangulated meshes only.
         </div>
-        <p>
-          Every face belongs to a larger story.<br />Inspect the connections
-          that hold a mesh together.
+      </nav>
+      <section class="viewport">
+        <div class="view-title">
+          <h1 id="object-name">Reversed cube</h1>
+          <button id="reset-camera" title="Reset camera">Reset view</button>
+        </div>
+        <canvas
+          id="canvas"
+          width="1000"
+          height="700"
+          tabindex="0"
+          role="img"
+          aria-label="Triangle mesh. Drag to orbit, arrow keys rotate, plus and minus zoom."
+        ></canvas>
+        <div class="view-tools">
+          <label><input type="checkbox" id="wire" checked /> Edges</label
+          ><label><input type="checkbox" id="spin" /> Rotate</label
+          ><button
+            id="topology-toggle"
+            aria-expanded="false"
+            aria-controls="topology-panel"
+          >
+            Topology <span aria-hidden="true">⌃</span>
+          </button>
+        </div>
+      </section>
+      <aside class="properties">
+        <h2>Properties</h2>
+
+        <p id="health" class="health"></p>
+        <div class="numbers">
+          <div><strong id="vertices">—</strong><span>vertices</span></div>
+          <div><strong id="faces">—</strong><span>triangles</span></div>
+          <div><strong id="edges">—</strong><span>edges</span></div>
+        </div>
+        <dl class="metrics">
+          <div>
+            <dt>Boundary edges</dt>
+            <dd id="boundary">—</dd>
+          </div>
+          <div>
+            <dt>Non-manifold edges</dt>
+            <dd id="nonmanifold">—</dd>
+          </div>
+          <div>
+            <dt>Non-manifold vertices</dt>
+            <dd id="badvertices">—</dd>
+          </div>
+          <div>
+            <dt>Winding conflicts</dt>
+            <dd id="winding">—</dd>
+          </div>
+          <div>
+            <dt>Surface area</dt>
+            <dd id="area">—</dd>
+          </div>
+        </dl>
+        <p class="legend">
+          <span class="boundary">━</span> boundary
+          <span class="conflict">━</span> winding
+          <span class="bad">━</span> non-manifold
         </p>
-      </section>
-      <section class="gallery">
-        <div class="viewport">
-          <div class="viewer-top">
-            <label
-              >Collection<select id="collection">
-                <option value="flipped">Cube / a reversed face</option>
-                <option value="cube">Cube / closed</option>
-                <option value="open">Cube / open roof</option>
-                <option value="torus">Torus</option>
-                <option value="mobius">Möbius band</option>
-                <option value="pinch">Pinched vertex</option>
-                <option value="edge">Overfull edge</option>
-              </select></label
-            ><button id="reset-camera">Reset view</button>
-          </div>
-          <canvas
-            id="canvas"
-            width="1000"
-            height="700"
-            tabindex="0"
-            role="img"
-            aria-label="Interactive triangle mesh. Drag to orbit, arrow keys rotate, plus and minus zoom."
-          ></canvas>
-          <div class="viewer-bottom">
-            <p>DRAG TO ORBIT · ARROWS TO ROTATE · + / − TO ZOOM</p>
-            <label><input type="checkbox" id="wire" checked /> Edges</label
-            ><label><input type="checkbox" id="spin" /> Slow orbit</label>
+        <div class="actions">
+          <button class="primary" id="repair" disabled>Repair winding</button>
+          <div>
+            <button id="reverse" disabled>Reverse all faces</button
+            ><button id="undo" disabled>Undo</button>
           </div>
         </div>
-        <aside>
-          <div class="section-number">01 / THE OBJECT</div>
-          <h2 id="object-name">Cube / a reversed face</h2>
-          <p id="health" class="health"></p>
-          <div class="numbers">
-            <div><strong id="vertices">—</strong><span>vertices</span></div>
-            <div><strong id="faces">—</strong><span>triangles</span></div>
-            <div><strong id="edges">—</strong><span>edges</span></div>
-          </div>
-          <dl class="metrics">
-            <div>
-              <dt>Boundary edges</dt>
-              <dd id="boundary">—</dd>
-            </div>
-            <div>
-              <dt>Non-manifold edges</dt>
-              <dd id="nonmanifold">—</dd>
-            </div>
-            <div>
-              <dt>Non-manifold vertices</dt>
-              <dd id="badvertices">—</dd>
-            </div>
-            <div>
-              <dt>Winding conflicts</dt>
-              <dd id="winding">—</dd>
-            </div>
-            <div>
-              <dt>Surface area</dt>
-              <dd id="area">—</dd>
-            </div>
-          </dl>
-          <p class="legend">
-            <span class="boundary">━</span> boundary
-            <span class="conflict">━</span> winding
-            <span class="bad">━</span> non-manifold
-          </p>
-          <div class="actions">
-            <button class="primary" id="repair" disabled>
-              Make winding consistent
+        <p id="status" role="status" aria-live="polite">Analyzing…</p>
+        <p id="error" role="alert"></p>
+        <p class="hint">
+          Connectivity uses vertex indices. Coincident positions are not welded.
+          Intersections are not tested.
+        </p>
+      </aside>
+      <section id="topology-panel" hidden>
+        <div class="panel-bar">
+          <div role="tablist" aria-label="Topology panels">
+            <button
+              role="tab"
+              id="tab-surfaces"
+              aria-controls="pane-surfaces"
+              aria-selected="true"
+              data-pane="surfaces"
+            >
+              Surfaces</button
+            ><button
+              role="tab"
+              id="tab-edges"
+              aria-controls="pane-edges"
+              aria-selected="false"
+              data-pane="edges"
+            >
+              Edges</button
+            ><button
+              role="tab"
+              id="tab-diagnostics"
+              aria-controls="pane-diagnostics"
+              aria-selected="false"
+              data-pane="diagnostics"
+            >
+              Diagnostics
             </button>
-            <div>
-              <button id="reverse" disabled>Reverse all faces</button
-              ><button id="undo" disabled>Undo</button>
-            </div>
           </div>
-          <p id="status" role="status" aria-live="polite">
-            Inspecting the mesh…
-          </p>
-          <p id="error" role="alert"></p>
-          <p class="hint">
-            Connectivity uses vertex indices. Coincident positions are not
-            welded. Intersections are not tested.
-          </p>
-        </aside>
-      </section>
-      <section class="topology">
-        <div class="section-number">02 / CONNECTED SURFACES</div>
-        <div id="components"></div>
-      </section>
-      <details class="inspection">
-        <summary>Inspect edges, vertices & repair evidence</summary>
-        <div class="inspection-grid">
-          <section>
+          <button id="topology-close" aria-label="Close topology">×</button>
+        </div>
+        <div class="panel-content">
+          <div
+            id="pane-surfaces"
+            role="tabpanel"
+            aria-labelledby="tab-surfaces"
+          >
+            <div id="components"></div>
+          </div>
+          <section
+            id="pane-edges"
+            role="tabpanel"
+            aria-labelledby="tab-edges"
+            hidden
+          >
             <label
               >Edge classification<select id="edge-filter">
                 <option value="problem">Boundaries & conflicts</option>
@@ -145,7 +189,12 @@
             <div id="edge-list"></div>
             <p id="edge-detail"></p>
           </section>
-          <section>
+          <section
+            id="pane-diagnostics"
+            role="tabpanel"
+            aria-labelledby="tab-diagnostics"
+            hidden
+          >
             <h3>Diagnostics</h3>
             <p id="diagnostics"></p>
             <p id="repair-note"></p>
@@ -162,16 +211,11 @@
             </p>
           </section>
         </div>
-        <div class="exports">
-          <button id="json" disabled>Save mesh JSON</button
-          ><button id="evidence" disabled>Export full evidence</button
-          ><button id="png" disabled>Save preview PNG</button>
-        </div>
-      </details>
-      <footer>
-        <span>Mesh Pavilion / Indexed geometry</span
-        ><span>Local computation. No uploads.</span>
-      </footer>
+      </section>
     </main>
+    <footer>
+      <span>Drag to orbit · Arrows to rotate · + / − to zoom</span
+      ><span>Orthographic</span>
+    </footer>
   </body>
 </html>
