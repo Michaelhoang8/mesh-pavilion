@@ -70,7 +70,7 @@ export function parseOBJ(text) {
         );
       const face = args.map((token) => {
         if (
-          !/^-?[1-9]\d*(?:\/(?:-?[1-9]\d*)?(?:\/(?:-?[1-9]\d*)?)?)?$/.test(
+          !/^-?[1-9]\d*(?:\/-?[1-9]\d*(?:\/-?[1-9]\d*)?|\/\/-?[1-9]\d*)?$/.test(
             token,
           )
         )
@@ -329,7 +329,7 @@ export function analyze(raw) {
       euler: chi,
       boundaryLoops: boundaryRegular ? loops : null,
       manifold,
-      orientable,
+      orientable: manifold ? orientable : null,
       consistent,
       closed,
       genus,

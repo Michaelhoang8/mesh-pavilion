@@ -1,4 +1,26 @@
 import test from "node:test";
+test("disconnected translated components keep independent topology and volumes", () => {
+  const a = example(),
+    b = example();
+  b.vertices = b.vertices.map((v) => [v[0] + 500, v[1] - 500, v[2] + 900]);
+  const m = {
+    ...a,
+    vertices: [...a.vertices, ...b.vertices],
+    faces: [...a.faces, ...b.faces.map((f) => f.map((v) => v + 8))],
+  };
+  const r = analyze(m);
+  assert.equal(r.components.length, 2);
+  for (const c of r.components) {
+    assert.equal(c.euler, 2);
+    assert.equal(c.genus, 0);
+    near(c.signedVolume, 8);
+  }
+  assert.throws(() => parseOBJ("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1/ 2/ 3/"));
+  assert.deepEqual(
+    parseOBJ("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1//1 2//1 3//1").mesh.faces,
+    [[0, 1, 2]],
+  );
+});
 import assert from "node:assert/strict";
 import {
   analyze,
