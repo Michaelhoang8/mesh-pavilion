@@ -10,6 +10,10 @@ The desktop editor opens directly to the model viewport. Choose examples in the 
 
 The canvas renders at its current size and device pixel ratio (capped at 2). A coordinate-axis indicator rotates with the camera; the dotted background is a screen-space guide, not a world-space measurement grid.
 
+Choose Copper, Porcelain, or Graphite in the viewport toolbar. Facet highlights respond to camera rotation while diagnostic edge colors retain their meanings. Materials affect the preview and PNG export only; geometry and OBJ/JSON evidence are unchanged. Finish and model changes use brief fades that respect reduced-motion preferences.
+
+![Porcelain torus](docs/porcelain.png)
+
 ## Run
 
 ```sh

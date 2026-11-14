@@ -644,4 +644,32 @@ footer {
   }
 }
 
-.actions .primary:hover:not(:disabled){background:#a8492b}
+.actions .primary:hover:not(:disabled) {
+  background: #a8492b;
+}
+.finish-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.finish-control select {
+  border: 1px solid #d3d7d1;
+  border-radius: 4px;
+  padding: 5px 7px;
+  background: #ffffffb3;
+  font: 11px Arial;
+  color: #394341;
+  max-width: 100px;
+}
+@media (max-width: 700px) {
+  .view-tools {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .finish-control {
+    font-size: 10px;
+  }
+  .finish-control select {
+    max-width: 90px;
+  }
+}

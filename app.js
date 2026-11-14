@@ -41,6 +41,8 @@ worker.onmessage = ({ data }) => {
   page = 0;
   enable(true);
   render();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+    canvas.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300 });
   $("status").textContent = ignored.length
     ? "OBJ directives ignored: " + ignored.join(", ") + "."
     : "";
@@ -215,7 +217,17 @@ function draw() {
   canvas.width = Math.round(width * dpr);
   canvas.height = Math.round(height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = "#eeefec";
+  const studio = ctx.createRadialGradient(
+    width * 0.45,
+    height * 0.4,
+    0,
+    width * 0.5,
+    height * 0.5,
+    Math.max(width, height) * 0.8,
+  );
+  studio.addColorStop(0, "#fafaf7");
+  studio.addColorStop(1, "#e2e5df");
+  ctx.fillStyle = studio;
   ctx.fillRect(0, 0, width, height);
   ctx.fillStyle = "#d3d7d1";
   for (let y = 25; y < height; y += 25)
@@ -272,17 +284,38 @@ function draw() {
         : ctx.moveTo(points[v].x, points[v].y),
     );
     ctx.closePath();
-    ctx.fillStyle =
-      "rgb(" +
-      Math.round(145 + light * 86) +
-      "," +
-      Math.round(77 + light * 81) +
-      "," +
-      Math.round(49 + light * 68) +
-      ")";
+    const finish = $("finish").value;
+    const palette = {
+      copper: [
+        [133, 65, 38],
+        [247, 186, 124],
+      ],
+      porcelain: [
+        [142, 157, 155],
+        [249, 250, 235],
+      ],
+      graphite: [
+        [32, 44, 53],
+        [154, 179, 191],
+      ],
+    }[finish];
+    const specular =
+      Math.pow(Math.abs(0.22 * n[0] + 0.33 * n[1] + 0.918 * n[2]), 24) * 0.38;
+    const rgb = palette[0].map((base, index) =>
+      Math.min(
+        255,
+        base + (palette[1][index] - base) * light + specular * (255 - base),
+      ),
+    );
+    ctx.fillStyle = `rgb(${rgb.map(Math.round).join(",")})`;
     ctx.fill();
     if ($("wire").checked) {
-      ctx.strokeStyle = "#824d3699";
+      ctx.strokeStyle =
+        finish === "copper"
+          ? "#74462e88"
+          : finish === "porcelain"
+            ? "#667d7888"
+            : "#101e2b99";
       ctx.lineWidth = 0.9;
       ctx.stroke();
     }
@@ -374,6 +407,11 @@ $("next").onclick = () => {
   edgeList();
 };
 $("wire").onchange = draw;
+$("finish").onchange = () => {
+  draw();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+    canvas.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: 250 });
+};
 $("reset-camera").onclick = () => {
   yaw = -0.65;
   pitch = 0.4;
